@@ -127,3 +127,25 @@ EMAIL_PORT = 25                             # 邮箱服务器端口（默认都�
 EMAIL_HOST_USER = 'lkb_1314@163.com'       # 发件人（天天生鲜官方邮箱账号）
 EMAIL_HOST_PASSWORD = 'jia5555'           # 邮箱客户端授权码，非邮箱登录密码
 EMAIL_FROM = '天天生鲜<lkb_1314@163.com>'   # 收件人接收到邮件后，显示在‘发件人’中的内容，如下图
+
+# django项目的缓存配置
+# Django用户认证模块 提供了登录的方法： login(request, user)
+# 调用该方法时，服务器会保存用户登陆状态，即保存登录用户id
+# 默认保存在MySQL的 django_session 数据库表中
+# 如果想提高网站性能，保存session数据到Redis中，可通过以下方式实现：
+# 方案一： pip install django-redis-sessions==0.5.6
+# 方案二： pip install django-redis==4.8.0
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/3",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": ""
+        }
+    }
+}
+
+# session数据缓存到Redis中
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"

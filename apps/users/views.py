@@ -146,6 +146,18 @@ class LoginView(View):
 
         # 通过django的login方法，保存登录用户状态（使用session）
         login(request, user)
+        # 记住用户功能就是设置session有效期
+        # request.session.set_expiry(value)
+        # 如果value是一个整数，那么会话将在value秒没有活动后过期
+        # 如果value为0，那么会话的Cookie将在用户的浏览会话结束时过期
+        # 如果value为None，那么会话则两个星期后过期
+        remember =request.POST.get('remember')
+        if remember != "on":
+            request.session.set_expiry(0)
+            # 没有勾选则设置为退出后失效,
+        else:
+            request.session.set_expiry(None)
+            # 勾选则默认为2周，整数则是N秒后退出
 
         # 响应请求，返回html界面 (进入首页)
         return redirect(reverse('goods:index'))
