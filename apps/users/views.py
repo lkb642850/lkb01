@@ -1,6 +1,6 @@
 import re
 
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.db import IntegrityError
@@ -29,6 +29,8 @@ def do_register(request):
 
 
 class RegisterView(View):
+    """注册页面"""
+
     def get(self, request):
         return render(request, 'register.html')
 
@@ -72,7 +74,7 @@ class RegisterView(View):
         token = user.generate_active_token()
         # RegisterView.send_active_mail(username,email,token)
         # 异步操作 celery 不会阻塞
-        send_active_mail.delay(username,email,token)
+        send_active_mail.delay(username, email, token)
         # 响应请求,返回html页面
 
         # 判断用户存在
@@ -80,6 +82,7 @@ class RegisterView(View):
         #
         # todo:发送激活邮箱
         return redirect(reverse("users:login"))
+
     # 静态方法
     @staticmethod
     def send_active_mail(username, email, token):
@@ -89,9 +92,9 @@ class RegisterView(View):
         from_email = settings.EMAIL_FROM  # 发件人
         recipient_list = [email]  # 接收人, 需要是列表
         # 邮件正文(带html样式)
-        html_message = ('<h2>尊敬的 %s, 感谢注册天天生鲜</h2>' 
-                        '请点击此链接激活您的帐号: <br/>' 
-                        '<a href="http://127.0.0.1:8000/users/active/%s">' 
+        html_message = ('<h2>尊敬的 %s, 感谢注册天天生鲜</h2>'
+                        '请点击此链接激活您的帐号: <br/>'
+                        '<a href="http://127.0.0.1:8000/users/active/%s">'
                         'http://127.0.0.1:8000/users/active/%s</a>'
                         ) % (username, token, token)
         send_mail(subject, message, from_email, recipient_list, html_message=html_message)
@@ -100,10 +103,10 @@ class RegisterView(View):
 class ActiveView(View):
     """用户激活"""
 
-    def get(self,request,token):
+    def get(self, request, token):
         try:
-            s = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 3600*24)
-            dict_data=s.loads(token.encode())
+            s = TimedJSONWebSignatureSerializer(settings.SECRET_KEY, 3600 * 24)
+            dict_data = s.loads(token.encode())
         except SignatureExpired:
             return HttpResponse("激活链接已经失效")
 
@@ -111,7 +114,6 @@ class ActiveView(View):
 
         User.objects.filter(id=user_id.update(is_active=True))
         return redirect(reverse("users:login"))
-
 
 
 class LoginView(View):
@@ -146,4 +148,18 @@ class LoginView(View):
         login(request, user)
 
         # 响应请求，返回html界面 (进入首页)
+        return redirect(reverse('goods:index'))
+
+
+class LogoutView(View):
+    """退出登录"""
+
+    def get(self, request):
+        """处理退出登录逻辑"""
+
+        # 由Django用户认证系统完成：会清理cookie
+        # 和session,request参数中有user对象
+        logout(request)
+
+        # 退出后跳转：由产品经理设计
         return redirect(reverse('goods:index'))

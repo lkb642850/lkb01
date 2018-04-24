@@ -19,6 +19,7 @@
 		<div class="header">
 			<div class="welcome fl">欢迎来到天天生鲜!</div>
 			<div class="fr">
+{#                如果用户名存在，通过Django方法自动提取#}
                 {% if user.is_authenticated %}
 				    <div class="login_btn fl">
                         欢迎您：<em>{{ user.username }}</em>
