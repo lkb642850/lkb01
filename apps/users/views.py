@@ -166,6 +166,7 @@ class LoginView(View):
 class LogoutView(View):
     """退出登录"""
 
+
     def get(self, request):
         """处理退出登录逻辑"""
 
