@@ -11,21 +11,22 @@ from django.shortcuts import render, redirect
 from django.views.generic import View
 from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
 
-from apps.users.models import User
+from apps.users.models import User, Address
 from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
+from utils.common import LoginRequiredMixin
 
 
-def index(request):
-    return HttpResponse("首页")
-
-
-def register(request):
-    return render(request, 'register.html')
-
-
-def do_register(request):
-    return HttpResponse("进入登录界面")
+# def index(request):
+#     return HttpResponse("首页")
+#
+#
+# def register(request):
+#     return render(request, 'register.html')
+#
+#
+# def do_register(request):
+#     return HttpResponse("进入登录界面")
 
 
 class RegisterView(View):
@@ -117,6 +118,7 @@ class ActiveView(View):
 
 
 class LoginView(View):
+    """登陆视图"""
     def get(self, request):
         """进入登录界面"""
         return render(request, 'login.html')
@@ -128,7 +130,7 @@ class LoginView(View):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        # 校验参数合法性
+        # 校验参数合法性 ，如果参数不存在 返回登陆页面
         if not all([username, password]):
             return render(request, 'login.html', {'errmsg': '请求参数不完整'})
 
@@ -136,7 +138,7 @@ class LoginView(View):
         # 验证用户名和密码是否正确
         user = authenticate(username=username, password=password)
 
-        # 用户名或密码不正确
+        # 用户名或密码不正确，回到登陆页面 不用重定向是因为需要给提示信息
         if user is None:
             return render(request, 'login.html', {'errmsg': '用户名或密码不正确'})
 
@@ -146,11 +148,10 @@ class LoginView(View):
 
         # 通过django的login方法，保存登录用户状态（使用session）
         login(request, user)
-        # 记住用户功能就是设置session有效期
-        # request.session.set_expiry(value)
-        # 如果value是一个整数，那么会话将在value秒没有活动后过期
-        # 如果value为0，那么会话的Cookie将在用户的浏览会话结束时过期
-        # 如果value为None，那么会话则两个星期后过期
+        # 记住用户功能就是设置session有效期 # request.session.set_expiry(value) # 如果value是一个整数，那么会话将在value秒没有活动后过期
+        # 如果value为0，那么会话的Cookie将在用户的浏览会话结束时过期 # 如果value为None，那么会话则两个星期后过期
+
+        # 获取勾选信息，如果开启则为ON
         remember =request.POST.get('remember')
         if remember != "on":
             request.session.set_expiry(0)
@@ -158,9 +159,15 @@ class LoginView(View):
         else:
             request.session.set_expiry(None)
             # 勾选则默认为2周，整数则是N秒后退出
+        next = request.GET.get('next')
+        # 如果next不为空，则返回到nextx的页面
+        if next:
+            return redirect(next)
+        else:
+            return redirect(reverse('goods:index'))
 
-        # 响应请求，返回html界面 (进入首页)
-        return redirect(reverse('goods:index'))
+            # 响应请求，返回html界面 (进入首页)
+
 
 
 class LogoutView(View):
@@ -176,3 +183,70 @@ class LogoutView(View):
 
         # 退出后跳转：由产品经理设计
         return redirect(reverse('goods:index'))
+
+
+class UserAddressViem(LoginRequiredMixin,View):
+    """用户地址"""
+    # 参数1 为登陆检测的函数，内置装饰器对函数进行装修，调用自带的login_required方法，判断用户是否已经登录
+    # 如果 @login_required 检测到未登录， 可以配置指定要跳转到哪个界面
+    def get(self, request):
+        """显示地址"""
+        try:
+            address = Address.objects.filter(user=request.user)\
+                .order_by('-create_time')[0]
+            # address = request.user.address_set.latest('create_time')
+        except Exception:
+            address = None
+
+        context = {
+            'which_page': 3,
+            'address': address,
+        }
+        return  render(request, 'user_center_site.html', context)
+
+    def post(self, request):
+        """"新增一个地址"""
+
+        # 获取用户请求参数
+        receiver = request.POST.get('receiver')
+        detail= request.POST.get('detail')
+        zip_code = request.POST.get('zip_code')
+        mobile = request.POST.get('mobile')
+        # 判断数据合法 如果为空 返回错误
+        if not all([receiver, detail, mobile]):
+            return render(request, 'user_center_site.html',{'errmsg': '参数不完整'})
+        # 保存地址到数据库中
+        Address.objects.create(
+            receiver_name=receiver,
+            receiver_mobile=mobile,
+            detail_addr=detail,
+            zip_code=zip_code,
+            user=request.user,
+
+        )
+
+        return redirect(reverse('users:address'))
+
+
+class UserOrderViem(LoginRequiredMixin,View):
+    """用户订单"""
+    def get(self, request):
+        context = {
+            'which_page': 2
+        }
+        return render(request, 'user_center_order.html', context)
+
+
+class UserInfoView(LoginRequiredMixin,View):
+    """用户中心"""
+    def get(self, request):
+        try:
+            address = request.user.address_set.latest('create_time')
+        except Exception:
+            address = None
+
+        context = {
+            'which_page': 1,
+            'address': address,
+        }
+        return render(request, 'user_center_info.html', context)
