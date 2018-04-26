@@ -7,7 +7,7 @@ class BaseModel(models.Model):
     # 最后修改时间
     update_time = models.DateTimeField(auto_now=True, verbose_name='修改时间')
     # 删除标识
-    delete = models.BooleanField(default=False, verbose_name='是否删除')
+    # delete = models.BooleanField(default=False, verbose_name='是否删除')
 
     class Meta(object):
         # 需要指定基类模型类为抽象的,否则迁移生成表时会出错

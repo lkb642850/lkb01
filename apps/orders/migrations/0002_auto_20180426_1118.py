@@ -8,9 +8,9 @@ from django.conf import settings
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('goods', '0001_initial'),
         ('orders', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('goods', '0001_initial'),
         ('users', '0001_initial'),
     ]
 
@@ -18,21 +18,21 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='orderinfo',
             name='address',
-            field=models.ForeignKey(to='users.Address', verbose_name='收货地址'),
+            field=models.ForeignKey(verbose_name='收货地址', to='users.Address'),
         ),
         migrations.AddField(
             model_name='orderinfo',
             name='user',
-            field=models.ForeignKey(to=settings.AUTH_USER_MODEL, verbose_name='下单用户'),
+            field=models.ForeignKey(verbose_name='下单用户', to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='ordergoods',
             name='order',
-            field=models.ForeignKey(to='orders.OrderInfo', verbose_name='所属订单'),
+            field=models.ForeignKey(verbose_name='所属订单', to='orders.OrderInfo'),
         ),
         migrations.AddField(
             model_name='ordergoods',
             name='sku',
-            field=models.ForeignKey(to='goods.GoodsSKU', verbose_name='订单商品'),
+            field=models.ForeignKey(verbose_name='订单商品', to='goods.GoodsSKU'),
         ),
     ]

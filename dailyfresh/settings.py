@@ -151,3 +151,7 @@ SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 # 如果 @login_required 检测到未登录， 可以配置指定要跳转到哪个界面
 LOGIN_URL = '/users/login'
+
+
+# 配置Django自定义的存储系统
+DEFAULT_FILE_STORAGE = 'utils.fdfs.storage.FdfsStorage'

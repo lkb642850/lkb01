@@ -253,7 +253,11 @@ class UserInfoView(LoginRequiredMixin,View):
         sku_ids = strict_redis.lrange(key, 0, 4)
         print(sku_ids)
         # 根据商品id，查询出商品对象,
-        skus = GoodsSKU.objects.filter(id__in=sku_ids)
+        # 设一个空列表 把浏览记录按照表的顺便加到skus表中并显示
+        skus = []
+        for sku_id in sku_ids:
+            sku = GoodsSKU.objects.get(id=int(sku_id))
+            skus.append(sku)
 
         try:
             address = request.user.address_set.latest('create_time')
