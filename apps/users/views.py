@@ -9,8 +9,10 @@ from django.shortcuts import render, redirect
 
 # Create your views here.
 from django.views.generic import View
+from django_redis import get_redis_connection
 from itsdangerous import TimedJSONWebSignatureSerializer, SignatureExpired
 
+from apps.goods.models import GoodsSKU
 from apps.users.models import User, Address
 from celery_tasks.tasks import send_active_mail
 from dailyfresh import settings
@@ -214,7 +216,7 @@ class UserAddressViem(LoginRequiredMixin,View):
         mobile = request.POST.get('mobile')
         # 判断数据合法 如果为空 返回错误
         if not all([receiver, detail, mobile]):
-            return render(request, 'user_center_site.html',{'errmsg': '参数不完整'})
+            return render(request, 'user_center_site.html', {'errmsg': '参数不完整'})
         # 保存地址到数据库中
         Address.objects.create(
             receiver_name=receiver,
@@ -240,6 +242,19 @@ class UserOrderViem(LoginRequiredMixin,View):
 class UserInfoView(LoginRequiredMixin,View):
     """用户中心"""
     def get(self, request):
+
+
+        # todo:从redis中读取登陆用户浏览过的商品，
+        # 返回一个StricRedis
+        # strict_redis = get_redis_connection("default") #参数默认可以为空
+        strict_redis = get_redis_connection()  # type:strict_redis
+        # 读取所以的商品id，返回一个列表
+        key = 'history_%s' % request.user.id
+        sku_ids = strict_redis.lrange(key, 0, 4)
+        print(sku_ids)
+        # 根据商品id，查询出商品对象,
+        skus = GoodsSKU.objects.filter(id__in=sku_ids)
+
         try:
             address = request.user.address_set.latest('create_time')
         except Exception:
@@ -248,5 +263,6 @@ class UserInfoView(LoginRequiredMixin,View):
         context = {
             'which_page': 1,
             'address': address,
+            'skus': skus,
         }
         return render(request, 'user_center_info.html', context)
