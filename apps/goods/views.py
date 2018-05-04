@@ -88,6 +88,81 @@ class DetailView(BaseCartView):
             return redirect(reverse('goods:index'))
         # 获取所有的类别数据
         categories = GoodsCategory.objects.all()
+        # 获取最新推介的前2位
+        new_skus = GoodsSKU.objects.filter(category=sku.category).order_by('-create_time')[0:2]
+        # 查询其他商品
+        other_skus = sku.spu.goodssku_set.exclude(id=sku.id)
+        # 获取购物车的数量
+        cart_count = self.get_cart_count(request)
+        # 如果是登陆的用户
+        if request.user.is_authenticated():
+            # 获取用户id
+            user_id = request.user.id
+            # 从redis中获取购物车信息
+            redis_conn = get_redis_connection('default')
+            # 获取用户的浏览记录
+            key = 'history_%s' % request.user.id
+            # 从左侧添加新的商品浏览记录
+            redis_conn.lpush(key, sku_id)
+            # 控制浏览记录保存5项
+            redis_conn.ltrim(key, 0, 4)
+        context = {
+            'categories': categories,
+            'sku': sku,
+            'new_skus': new_skus,
+            'cart_count': cart_count,
+            'other_skus': other_skus,
+        }
 
 
-        return render(request, 'detail.html')
+
+
+        # 相应请求 返回html页面
+        return render(request, 'detail.html', context)
+
+
+class ListView(BaseCartView):
+
+    def get(self,request, category_id, page_num):
+        """显示商品列表界面"""
+
+        # 获取请求参数
+        sort = request.GET.get('sort')
+        # 检验参数合法性
+        try:
+            category = GoodsCategory.objects.get(id=category_id)
+        except GoodsCategory.DoesNotExist:
+            # 查询不到类别 跳转到首页
+            return redirect(reverse('goods:index'))
+        # 业务 查询项对应的商品数据
+        # 商品分类信息
+        categories = GoodsCategory.objects.all()
+        # 新品推荐信息（在GoodsSKU表中，查询特定类别信息，按照时间倒序）
+        try:
+            new_skus = GoodsSKU.objects.filter(
+                category=category).order_by('-create_time')[0:2]
+        except:
+            new_skus = None
+        # 商品列表信息
+        if sort == 'price':
+            skus = GoodsSKU.objects.filter(category=category).order_by('price')
+        elif sort == 'hot':
+            skus = GoodsSKU.objects.filter(category=category).order_by('-sales')
+        else:
+            skus = GoodsSKU.objects.filter(category=category)
+            sort = 'default'
+        # 购物车信息
+        cart_count = self.get_cart_count(request)
+
+        # 定义模板要显示的数据
+        context = {
+            'category': category,
+            'categories': categories,
+            'skus': skus,
+            'new_skus': new_skus,
+            # 'page_list': page_list,
+            'cart_count': cart_count,
+            'sort': sort,
+        }
+
+        return render(request, 'list.html', context)

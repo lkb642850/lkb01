@@ -24,8 +24,8 @@ urlpatterns = [
     url(r"^orders/", include('apps.orders.urls', namespace='orders')),
 
     url(r'^tinymce/', include('tinymce.urls')),
-    url(r'^users/', include('apps.users.urls', namespace='users')),  # 用户模块
+
     url(r"^", include('apps.goods.urls', namespace='goods')),
     # 商品模块 /index
-    url(r'^', include('apps.goods.urls', namespace='goods')),
+
 ]
