@@ -1,4 +1,5 @@
 from django.core.cache import cache
+from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
 from django.http.response import HttpResponse
 from django.shortcuts import render, redirect
@@ -153,14 +154,25 @@ class ListView(BaseCartView):
             sort = 'default'
         # 购物车信息
         cart_count = self.get_cart_count(request)
+        # 分页显示 参数1 要分页的数据 参数2 每页显示的条数
+        paginator = Paginator(skus, 3)
+        try:
+            page = paginator.page(page_num)
+        except EmptyPage: #页码出错
+            page = paginator.page(1)
+
+
+
+
 
         # 定义模板要显示的数据
         context = {
             'category': category,
             'categories': categories,
-            'skus': skus,
+            # 'skus': skus,
             'new_skus': new_skus,
-            # 'page_list': page_list,
+            'page': page,
+            'page_range': paginator.page_range,
             'cart_count': cart_count,
             'sort': sort,
         }

@@ -66,7 +66,7 @@
 
 			<ul class="goods_type_list clearfix">
                 {#显示当前类别下的商品#}
-                {% for sku in skus %}
+                {% for sku in page %}
 				<li>
 					<a href="{% url 'goods:detail' sku.id %} ">
                         <img src="{{ sku.default_image.url }}"></a>
@@ -81,15 +81,21 @@
 
 			</ul>
 
-			<div class="pagenation">
-				<a href="#"><上一页</a>
-				<a href="#" class="active">1</a>
-				<a href="#">2</a>
-				<a href="#">3</a>
-				<a href="#">4</a>
-				<a href="#">5</a>
-				<a href="#">下一页></a>
-			</div>
+            <div class="pagenation">
+                {% if page.has_previous %}
+                    <a href="{% url 'goods:list' category.id page.previous_page_number %}?sort={{ sort }}">
+                        &lt;上一页</a>
+                {% endif %}
+
+                {% for index in page_range %}
+                    <a href="{% url 'goods:list' category.id index %}?sort={{ sort }}"
+                       {% if index == page.number %}class="active"{% endif %}>{{ index }}</a>
+                {% endfor %}
+                {% if page.has_next %}
+                    <a href="{% url 'goods:list' category.id page.next_page_number %}?sort={{ sort }}">
+                        下一页&gt;</a>
+                {% endif %}
+            </div>
 		</div>
 	</div>
 
